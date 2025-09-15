@@ -642,9 +642,55 @@
         
 
 
-        // Initialize price calculation on page load
+        // Auto-fill form from pre-booking data
+        async function loadPreBookingData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const preBookingId = urlParams.get('prebooking');
+            
+            if (preBookingId) {
+                try {
+                    const response = await fetch(`http://localhost:3000/api/pre-booking/${preBookingId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const booking = data.preBooking;
+                        
+                        // Auto-fill form fields
+                        document.getElementById('fullname').value = booking.fullname;
+                        document.getElementById('mobile').value = booking.mobile;
+                        document.getElementById('adult').value = booking.adults;
+                        
+                        // Set occupancy if available
+                        if (booking.occupancy) {
+                            const occupancySelect = document.getElementById('occupancy');
+                            occupancySelect.value = booking.occupancy.toLowerCase();
+                        }
+                        
+                        // Calculate and update price
+                        calculatePrice();
+                        
+                        // Show notification
+                        const notification = document.getElementById('fixedNotification');
+                        notification.style.display = "block";
+                        notification.innerHTML = "✅ Booking details loaded! Please upload payment receipt and confirm.";
+                        notification.style.backgroundColor = "#d4edda";
+                        notification.style.color = "#155724";
+                        notification.style.border = "2px solid #c3e6cb";
+                        
+                        setTimeout(() => {
+                            notification.style.display = "none";
+                        }, 5000);
+                    }
+                } catch (error) {
+                    console.error('Error loading pre-booking data:', error);
+                }
+            }
+        }
+
+        // Initialize price calculation and load pre-booking data on page load
         document.addEventListener('DOMContentLoaded', function() {
             calculatePrice();
+            loadPreBookingData();
         });
     </script>
 

@@ -122,6 +122,12 @@
             background: #d4edda;
             color: #155724;
         }
+        
+        /* Hide header in book-room section */
+        #book-room-section ~ #mainHeader,
+        body:has(#book-room-section:not([style*="display: none"])) #mainHeader {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -163,7 +169,7 @@
             <!-- Main Content -->
             <div class="main-content" id="mainContent">
                 <!-- Header -->
-                <div class="header-bar d-flex justify-content-between align-items-center">
+                <div class="header-bar d-flex justify-content-between align-items-center" id="mainHeader">
                     <h3 class="mb-0">Admin Dashboard</h3>
                     <div>
                         <span class="text-muted">Welcome, Admin</span>
@@ -209,104 +215,126 @@
 
                 <!-- Book a Room Section -->
                 <div id="book-room-section" style="display: none;">
-                    <h4 class="mb-4">Book a Room</h4>
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-body">
-                                    <form id="adminBookingForm">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Full Name *</label>
-                                                    <input type="text" class="form-control" id="adminFullname" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Mobile Number *</label>
-                                                    <input type="tel" class="form-control" id="adminMobile" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Number of Adults *</label>
-                                                    <select class="form-control" id="adminAdults" required>
-                                                        <option value="">Select Adults</option>
-                                                        <option value="1">1 Adult</option>
-                                                        <option value="2">2 Adults</option>
-                                                        <option value="3">3 Adults</option>
-                                                        <option value="4">4 Adults</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Room Type *</label>
-                                                    <select class="form-control" id="adminRoom" required>
-                                                        <option value="">Select Room</option>
-                                                        <option value="Standard Room">Standard Room</option>
-                                                        <option value="Deluxe Room">Deluxe Room</option>
-                                                        <option value="Suite">Suite</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Occupancy</label>
-                                                    <select class="form-control" id="adminOccupancy">
-                                                        <option value="">Select Occupancy</option>
-                                                        <option value="Single">Single</option>
-                                                        <option value="Double">Double</option>
-                                                        <option value="Triple">Triple</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Total Amount *</label>
-                                                    <input type="number" class="form-control" id="adminAmount" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Payment Receipt (Optional)</label>
-                                            <input type="file" class="form-control-file" id="adminReceipt" accept="image/*">
-                                            <small class="text-muted">Upload payment receipt if available</small>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <button type="submit" class="btn btn-primary btn-lg btn-block">
-                                                    <i class="fas fa-save"></i> Direct Book
-                                                </button>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <button type="button" class="btn btn-success btn-lg btn-block" onclick="generateBookingLink()">
-                                                    <i class="fas fa-link"></i> Generate Link
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
+                    <div class="header-bar d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0"><i class="fas fa-plus-circle text-success"></i> Book a Room</h4>
+                        <small class="text-muted">Create booking or generate customer link</small>
+                    </div>
+                    
+                    <div class="booking-card">
+                        <form id="adminBookingForm">
+                            <!-- Customer Information -->
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3"><i class="fas fa-user"></i> Customer Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Full Name *</label>
+                                        <input type="text" class="form-control form-control-lg" id="adminFullname" placeholder="Enter customer name" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Mobile Number *</label>
+                                        <input type="tel" class="form-control form-control-lg" id="adminMobile" placeholder="Enter mobile number" required>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h5>Admin Booking</h5>
-                                    <p class="text-muted">As an admin, you can directly book rooms for customers without payment verification.</p>
-                                    <ul class="list-unstyled">
-                                        <li><i class="fas fa-check text-success"></i> Direct booking</li>
-                                        <li><i class="fas fa-check text-success"></i> Auto-confirmed status</li>
-                                        <li><i class="fas fa-check text-success"></i> Optional receipt</li>
-                                    </ul>
+
+                            <!-- Booking Details -->
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3"><i class="fas fa-bed"></i> Booking Details</h6>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Number of Adults *</label>
+                                        <input type="number" class="form-control form-control-lg" id="adminAdults" placeholder="Enter adults" value="1" min="1" required oninput="updatePrice()">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Room Type *</label>
+                                        <select class="form-control form-control-lg" id="adminRoom" required onchange="updatePrice()">
+                                            <option value="">Select Room</option>
+                                            <option value="Standard Room" data-price="2500">Standard Room</option>
+                                            <option value="Executive Room" data-price="3500">Executive Room</option>
+                                            <option value="Super Executive Room" data-price="4500">Super Executive Room</option>
+                                            <option value="Suite Room" data-price="6000">Suite Room</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold">Occupancy</label>
+                                        <select class="form-control form-control-lg" id="adminOccupancy" onchange="updatePrice()">
+                                            <option value="">Select Occupancy</option>
+                                            <option value="Single" data-multiplier="1">Single</option>
+                                            <option value="Double" data-multiplier="1.2">Double</option>
+                                            <option value="Triple" data-multiplier="1.5">Triple</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+
+                            <!-- Price Display -->
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3"><i class="fas fa-calculator"></i> Price Calculation</h6>
+                                <div class="price-display p-3" style="background-color: #f8f9fa; border-radius: 8px; border: 1px solid #644222;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-2"><strong>Base Rate:</strong> ₹<span id="baseRate">0</span></p>
+                                            <p class="mb-2"><strong>GST (18%):</strong> ₹<span id="gstAmount">0</span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="text-success mb-0"><strong>Total Amount: ₹<span id="totalAmount">0</span></strong></h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Payment Information -->
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3"><i class="fas fa-rupee-sign"></i> Payment Information</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Final Amount *</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control" id="adminAmount" placeholder="Auto-calculated" readonly>
+                                        </div>
+                                        <small class="text-muted">Amount calculated automatically with GST</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Payment Receipt (Optional)</label>
+                                        <input type="file" class="form-control form-control-lg" id="adminReceipt" accept="image/*">
+                                        <small class="text-muted">Upload receipt if payment already received</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Action Buttons -->
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-2">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                                        <i class="fas fa-check-circle"></i> Direct Book
+                                    </button>
+                                    <small class="text-muted d-block mt-1">Instantly confirm booking</small>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <button type="button" class="btn btn-success btn-lg w-100" onclick="generateBookingLink()">
+                                        <i class="fas fa-share-alt"></i> Generate Customer Link
+                                    </button>
+                                    <small class="text-muted d-block mt-1">Send link to customer for payment</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Generated Link Display Box -->
+                            <div id="linkDisplayBox" class="mt-4" style="display: none;">
+                                <div class="alert alert-success border-0 shadow-sm">
+                                    <h6 class="alert-heading"><i class="fas fa-link text-success"></i> Customer Booking Link Generated!</h6>
+                                    <div class="input-group mt-3">
+                                        <input type="text" id="generatedLink" class="form-control form-control-lg" readonly>
+                                        <button class="btn btn-outline-success btn-lg" type="button" onclick="copyLink()">
+                                            <i class="fas fa-copy"></i> Copy Link
+                                        </button>
+                                    </div>
+                                    <hr class="my-3">
+                                    <p class="mb-0"><i class="fas fa-info-circle"></i> Share this link with the customer via WhatsApp, SMS, or email to complete their booking.</p>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
                     </div>
                 </div>
 
@@ -348,6 +376,14 @@
             document.getElementById('dashboard-section').style.display = 'none';
             document.getElementById('bookings-section').style.display = 'none';
             document.getElementById('book-room-section').style.display = 'none';
+
+            // Show/hide main header based on section
+            const mainHeader = document.getElementById('mainHeader');
+            if (section === 'book-room') {
+                mainHeader.classList.add('d-none');
+            } else {
+                mainHeader.classList.remove('d-none');
+            }
 
             // Show selected section
             document.getElementById(section + '-section').style.display = 'block';
@@ -519,6 +555,65 @@
             });
         });
         
+        // Update price based on room, occupancy and adults selection
+        function updatePrice() {
+            const roomSelect = document.getElementById('adminRoom');
+            const occupancySelect = document.getElementById('adminOccupancy');
+            const adultsInput = document.getElementById('adminAdults');
+            const amountInput = document.getElementById('adminAmount');
+            const baseRateEl = document.getElementById('baseRate');
+            const gstAmountEl = document.getElementById('gstAmount');
+            const totalAmountEl = document.getElementById('totalAmount');
+            
+            const selectedRoom = roomSelect.options[roomSelect.selectedIndex];
+            const selectedOccupancy = occupancySelect.options[occupancySelect.selectedIndex];
+            const adults = parseInt(adultsInput.value) || 1;
+            
+            if (selectedRoom && selectedRoom.dataset.price) {
+                let basePrice = parseInt(selectedRoom.dataset.price);
+                let multiplier = 1;
+                
+                if (selectedOccupancy && selectedOccupancy.dataset.multiplier) {
+                    multiplier = parseFloat(selectedOccupancy.dataset.multiplier);
+                }
+                
+                // Calculate base amount (base price * occupancy multiplier * adults)
+                const baseAmount = Math.round(basePrice * multiplier * adults);
+                
+                // Calculate GST (18%)
+                const gstAmount = Math.round(baseAmount * 0.18);
+                
+                // Calculate total
+                const totalAmount = baseAmount + gstAmount;
+                
+                // Update display
+                if (baseRateEl) baseRateEl.textContent = baseAmount;
+                if (gstAmountEl) gstAmountEl.textContent = gstAmount;
+                if (totalAmountEl) totalAmountEl.textContent = totalAmount;
+                if (amountInput) amountInput.value = totalAmount;
+            } else {
+                // Reset display if no room selected
+                if (baseRateEl) baseRateEl.textContent = '0';
+                if (gstAmountEl) gstAmountEl.textContent = '0';
+                if (totalAmountEl) totalAmountEl.textContent = '0';
+                if (amountInput) amountInput.value = '';
+            }
+        }
+
+        // Copy link function
+        function copyLink() {
+            const linkInput = document.getElementById('generatedLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(() => {
+                document.execCommand('copy');
+                alert('Link copied to clipboard!');
+            });
+        }
+
         // Generate booking link function
         async function generateBookingLink() {
             const formData = {
@@ -548,16 +643,34 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const linkText = `Hi ${formData.fullname}, please complete your booking: ${result.bookingLink}`;
+                    console.log('Link generated:', result.bookingLink);
                     
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(linkText).then(() => {
-                        alert(`Booking link generated and copied to clipboard!\n\nLink: ${result.bookingLink}`);
-                    }).catch(() => {
-                        alert(`Booking link generated!\n\nLink: ${result.bookingLink}\n\nPlease copy this link manually.`);
-                    });
+                    // Show link in display box with multiple methods
+                    let linkInput = document.getElementById('generatedLink');
+                    let linkBox = document.getElementById('linkDisplayBox');
                     
-                    document.getElementById('adminBookingForm').reset();
+                    console.log('linkInput found:', !!linkInput);
+                    console.log('linkBox found:', !!linkBox);
+                    
+                    // Fallback selectors
+                    if (!linkInput) linkInput = document.querySelector('#generatedLink');
+                    if (!linkBox) linkBox = document.querySelector('#linkDisplayBox');
+                    
+                    if (linkInput && linkBox) {
+                        linkInput.value = result.bookingLink;
+                        linkBox.style.display = 'block';
+                        linkBox.style.visibility = 'visible';
+                        console.log('Link set to:', linkInput.value);
+                        console.log('Box display set to:', linkBox.style.display);
+                        
+                        // Force scroll to show the box
+                        setTimeout(() => {
+                            linkBox.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    } else {
+                        console.error('Elements still not found, showing alert');
+                        alert('Link generated: ' + result.bookingLink);
+                    }
                 } else {
                     alert('Failed to generate link: ' + result.error);
                 }

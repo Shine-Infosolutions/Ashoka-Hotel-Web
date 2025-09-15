@@ -198,7 +198,17 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
         const preBookingId = 'PRE' + Date.now();
-        const bookingLink = `${req.protocol}://${req.get('host')}/complete-booking.html?id=${preBookingId}`;
+        
+        // Map room types to their respective HTML pages
+        const roomPageMap = {
+            'Standard Room': 'standard.html',
+            'Executive Room': 'executive.html',
+            'Super Executive Room': 'super executive.html',
+            'Suite Room': 'Suite.html'
+        };
+        
+        const roomPage = roomPageMap[room] || 'standard.html';
+        const bookingLink = `${req.protocol}://${req.get('host')}/${roomPage}?prebooking=${preBookingId}`;
         
         const preBookingData = {
             preBookingId,
@@ -290,7 +300,17 @@ app.get('/api/pre-booking/:id', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Booking link expired or not found' });
         }
         
-        res.json({ success: true, preBooking });
+        res.json({ 
+            success: true, 
+            preBooking: {
+                fullname: preBooking.fullname,
+                mobile: preBooking.mobile,
+                adults: preBooking.adults,
+                roomType: preBooking.roomType,
+                occupancy: preBooking.occupancy,
+                totalAmount: preBooking.totalAmount
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
