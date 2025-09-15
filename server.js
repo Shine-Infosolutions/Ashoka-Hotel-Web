@@ -381,6 +381,11 @@ app.post('/api/complete-booking/:id', upload.single('payment_receipt'), async (r
     }
 });
 
+// Root route - serve index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
