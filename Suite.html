@@ -453,7 +453,7 @@
             formData.append('payment_receipt', fileInput.files[0]);
             
             // Submit to API
-            fetch('http://localhost:3000/api/bookings', {
+            fetch('/api/bookings', {
                 method: 'POST',
                 body: formData
             })
@@ -565,7 +565,7 @@
             
             if (preBookingId) {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/pre-booking/${preBookingId}`);
+                    const response = await fetch(`/api/pre-booking/${preBookingId}`);
                     const data = await response.json();
                     
                     if (data.success) {

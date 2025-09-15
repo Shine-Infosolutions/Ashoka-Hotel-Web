@@ -417,6 +417,19 @@ app.get('/Suite.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'Suite.html'));
 });
 
+// Add missing HTML routes
+app.get('/about.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'about.html'));
+});
+
+app.get('/contact.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'contact.html'));
+});
+
+app.get('/gallery.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'gallery.html'));
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
