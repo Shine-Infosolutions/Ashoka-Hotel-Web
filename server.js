@@ -70,6 +70,8 @@ const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 
 // MongoDB connection with better error handling
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+
+console.log('🔄 Connecting to MongoDB Atlas...');
 mongoose.connect(MONGODB_URI, {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
@@ -79,10 +81,13 @@ mongoose.connect(MONGODB_URI, {
     maxIdleTimeMS: 30000,
     bufferCommands: false,
 })
-    .then(() => console.log('✅ MongoDB Atlas Connected'))
+    .then(() => {
+        console.log('✅ MongoDB Atlas Connected Successfully');
+        console.log('📊 Database ready for operations');
+    })
     .catch(err => {
-        console.log('❌ MongoDB connection error:', err);
-        process.exit(1);
+        console.log('❌ MongoDB connection error:', err.message);
+        console.log('⚠️  Server will continue but database operations may fail');
     });
 
 // Routes
