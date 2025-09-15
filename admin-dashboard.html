@@ -97,11 +97,81 @@
             cursor: pointer;
         }
         @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
             .booking-card {
                 padding: 15px;
             }
             .payment-image {
                 max-width: 120px;
+            }
+            .header-bar {
+                padding: 10px 15px;
+                flex-direction: column;
+                text-align: center;
+            }
+            .header-bar h3 {
+                font-size: 1.5rem;
+                margin-bottom: 10px;
+            }
+            .card-body h5 {
+                font-size: 0.9rem;
+            }
+            .card-body h2 {
+                font-size: 1.5rem;
+            }
+            .form-control-lg {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .btn-lg {
+                font-size: 14px;
+                padding: 10px 16px;
+            }
+            .price-display {
+                text-align: center;
+            }
+            .price-display .row {
+                flex-direction: column;
+            }
+            .hamburger {
+                top: 15px;
+                left: 15px;
+                padding: 8px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 5px;
+            }
+            .booking-card {
+                padding: 10px;
+                margin-bottom: 15px;
+            }
+            .header-bar {
+                padding: 8px 10px;
+                margin-bottom: 15px;
+            }
+            .header-bar h4 {
+                font-size: 1.2rem;
+            }
+            .form-label {
+                font-size: 13px;
+            }
+            .btn {
+                font-size: 13px;
+            }
+            .alert {
+                padding: 10px;
+                font-size: 13px;
+            }
+            .input-group .btn {
+                padding: 8px 12px;
+            }
+            .modal-dialog {
+                margin: 10px;
             }
         }
         .modal-img {
