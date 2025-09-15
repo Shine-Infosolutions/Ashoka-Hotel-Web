@@ -46,7 +46,10 @@ const bookingSchema = new mongoose.Schema({
 const Booking = mongoose.model('Booking', bookingSchema);
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+})
     .then(() => console.log('✅ MongoDB Atlas Connected'))
     .catch(err => console.log('❌ MongoDB connection error:', err));
 
@@ -162,6 +165,15 @@ app.get('/api/health', (req, res) => {
         status: 'OK',
         mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
     });
+});
+
+// Error handlers
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
 });
 
 app.listen(PORT, () => {
