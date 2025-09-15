@@ -6,11 +6,11 @@ const multer = require('multer');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
-// Cloudinary config
+// Cloudinary config with fallback
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dlfhykisk',
+    api_key: process.env.CLOUDINARY_API_KEY || '239914458915717',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '7ZoO1BbNZm2oLK64uEHBzEU0VIs'
 });
 
 const app = express();
@@ -68,13 +68,22 @@ const preBookingSchema = new mongoose.Schema({
 
 const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,
+// MongoDB connection with better error handling
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
+    bufferMaxEntries: 0,
+    maxPoolSize: 10,
+    minPoolSize: 5,
+    maxIdleTimeMS: 30000,
+    bufferCommands: false,
 })
     .then(() => console.log('✅ MongoDB Atlas Connected'))
-    .catch(err => console.log('❌ MongoDB connection error:', err));
+    .catch(err => {
+        console.log('❌ MongoDB connection error:', err);
+        process.exit(1);
+    });
 
 // Routes
 app.post('/api/admin/login', (req, res) => {
