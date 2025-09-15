@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Ashoka Hotel</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #644222, #8b5a3c);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h2 {
+            color: #644222;
+            margin-bottom: 10px;
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        .form-control:focus {
+            border-color: #644222;
+            box-shadow: 0 0 0 0.2rem rgba(100, 66, 34, 0.25);
+        }
+        .btn-login {
+            background: #644222;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            width: 100%;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background: #8b5a3c;
+            transform: translateY(-2px);
+        }
+        .error-msg {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-user-shield fa-3x" style="color: #644222; margin-bottom: 15px;"></i>
+            <h2>Admin Login</h2>
+            <p style="color: #666;">Ashoka Hotel Management</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    </div>
+                    <input type="text" class="form-control" id="username" placeholder="Username" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    </div>
+                    <input type="password" class="form-control" id="password" placeholder="Password" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-login">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            
+            <div class="error-msg" id="errorMsg">
+                Invalid username or password!
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const submitBtn = document.querySelector('.btn-login');
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    localStorage.setItem('adminToken', data.token);
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    errorMsg.textContent = data.error || 'Login failed';
+                    errorMsg.style.display = 'block';
+                    setTimeout(() => {
+                        errorMsg.style.display = 'none';
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMsg.textContent = 'Network error. Please check if server is running.';
+                errorMsg.style.display = 'block';
+                setTimeout(() => {
+                    errorMsg.style.display = 'none';
+                }, 3000);
+            } finally {
+                // Reset button state
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Ashoka Hotel</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            background: #644222;
+            height: 100vh;
+            padding: 0;
+            position: fixed;
+            left: -250px;
+            width: 250px;
+            transition: left 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar.active {
+            left: 0;
+        }
+        .hamburger {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: #644222;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .main-content {
+            margin-left: 0;
+            transition: all 0.3s ease;
+            padding: 20px;
+            width: 100%;
+        }
+        @media (min-width: 769px) {
+            .main-content.shifted {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.active {
+            display: block;
+        }
+        .sidebar .nav-link {
+            color: #fff;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .header-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .booking-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #644222;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .payment-image {
+            max-width: 150px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .booking-card {
+                padding: 15px;
+            }
+            .payment-image {
+                max-width: 120px;
+            }
+        }
+        .modal-img {
+            max-width: 100%;
+            height: auto;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger Button -->
+    <button class="hamburger" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Overlay -->
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="sidebar" id="sidebar">
+                <div class="text-center py-4">
+                    <h4 class="text-white">Ashoka Hotel</h4>
+                    <small class="text-light">Admin Panel</small>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="#" onclick="showSection('bookings')">
+                        <i class="fas fa-calendar-check"></i> Bookings
+                    </a>
+                </nav>
+                <div style="position: absolute; bottom: 20px; width: 100%;">
+                    <a class="nav-link" href="#" onclick="logout()" style="border: none;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content" id="mainContent">
+                <!-- Header -->
+                <div class="header-bar d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Admin Dashboard</h3>
+                    <div>
+                        <span class="text-muted">Welcome, Admin</span>
+                        <i class="fas fa-user-circle fa-2x text-secondary ml-2"></i>
+                    </div>
+                </div>
+
+                <!-- Dashboard Section -->
+                <div id="dashboard-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card text-white bg-primary">
+                                <div class="card-body">
+                                    <h5>Total Bookings</h5>
+                                    <h2 id="totalBookings">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-success">
+                                <div class="card-body">
+                                    <h5>Today's Bookings</h5>
+                                    <h2 id="todayBookings">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-white bg-warning">
+                                <div class="card-body">
+                                    <h5>Pending Reviews</h5>
+                                    <h2 id="pendingBookings">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bookings Section -->
+                <div id="bookings-section" style="display: none;">
+                    <h4 class="mb-4">Customer Bookings</h4>
+                    <div id="bookingsList" style="max-height: 70vh; overflow-y: auto; width: 100%;"></div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Payment Receipt</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" class="modal-img" src="" alt="Payment Receipt">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/vendor/jquery-3.6.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let authToken = 'admin-token-123'; // Simplified for testing
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.getElementById('dashboard-section').style.display = 'none';
+            document.getElementById('bookings-section').style.display = 'none';
+
+            // Show selected section
+            document.getElementById(section + '-section').style.display = 'block';
+
+            // Update active nav
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (section === 'bookings') {
+                loadBookings();
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                console.log('Loading dashboard stats...');
+                const response = await fetch(`${API_BASE}/admin/stats`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Stats data:', data);
+                    const stats = data.stats;
+                    
+                    document.getElementById('totalBookings').textContent = stats.total_bookings || 0;
+                    document.getElementById('todayBookings').textContent = stats.today_bookings || 0;
+                    document.getElementById('pendingBookings').textContent = stats.pending_bookings || 0;
+                } else {
+                    console.error('Failed to load stats:', response.status);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadBookings() {
+            try {
+                console.log('Loading bookings...');
+                const response = await fetch(`${API_BASE}/admin/bookings`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Bookings data:', data);
+                    const bookings = data.bookings;
+                    const bookingsList = document.getElementById('bookingsList');
+                    
+                    if (!bookings || bookings.length === 0) {
+                        bookingsList.innerHTML = '<div class="alert alert-info">No bookings found.</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    bookings.forEach(booking => {
+                        const statusClass = booking.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
+                        const statusText = booking.status === 'confirmed' ? 'Confirmed' : 'Pending';
+                        
+                        html += `
+                            <div class="booking-card">
+                                <div class="row">
+                                    <div class="col-lg-7 col-md-6">
+                                        <h5>${booking.fullname}</h5>
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <p><strong>Mobile:</strong> ${booking.mobile}</p>
+                                                <p><strong>Room:</strong> ${booking.room}</p>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <p><strong>Adults:</strong> ${booking.adult}</p>
+                                                <p><strong>Amount:</strong> ₹${booking.total_amount || (booking.adult * 3000)}</p>
+                                            </div>
+                                        </div>
+                                        <p><strong>Date:</strong> ${new Date(booking.created_at).toLocaleString()}</p>
+                                        <span class="status-badge ${statusClass}">${statusText}</span>
+                                        <div class="mt-2">
+                                            <button class="btn btn-sm btn-success" onclick="updateStatus('${booking.id}', 'confirmed')">
+                                                Confirm
+                                            </button>
+                                            <button class="btn btn-sm btn-warning ml-2" onclick="updateStatus('${booking.id}', 'pending')">
+                                                Pending
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 text-center mt-3 mt-md-0">
+                                        <p><strong>Payment Receipt:</strong></p>
+                                        ${booking.payment_receipt ? 
+                                            `<img src="http://localhost:3000/uploads/${booking.payment_receipt}" 
+                                                 class="payment-image img-fluid" 
+                                                 onclick="showImage('http://localhost:3000/uploads/${booking.payment_receipt}')"
+                                                 alt="Payment Receipt" style="max-width: 150px; cursor: pointer;">
+                                            <br><small class="text-muted d-block mt-1">${booking.payment_receipt}</small>` 
+                                            : '<p class="text-muted">No receipt uploaded</p>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    bookingsList.innerHTML = html;
+                } else {
+                    document.getElementById('bookingsList').innerHTML = '<div class="alert alert-danger">Failed to load bookings</div>';
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('bookingsList').innerHTML = '<div class="alert alert-danger">Error loading bookings</div>';
+            }
+        }
+
+
+
+        async function updateStatus(bookingId, status) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/bookings/${bookingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    loadBookings(); // Reload bookings
+                    alert('Status updated successfully!');
+                } else {
+                    alert('Failed to update status');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status');
+            }
+        }
+
+        function showImage(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            $('#imageModal').modal('show');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.toggle('active');
+            
+            if (window.innerWidth > 768) {
+                overlay.classList.remove('active');
+                mainContent.classList.toggle('shifted');
+            } else {
+                overlay.classList.toggle('active');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            mainContent.classList.remove('shifted');
+        }
+        
+        // Auto-close sidebar on mobile when clicking nav items
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+        
+        // Load dashboard on page load
+        loadDashboard();
+    </script>
+</body>
+</html>
