@@ -20,7 +20,14 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files
 app.use(express.static(__dirname));
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/img', express.static(path.join(__dirname, 'img')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/fontawesome', express.static(path.join(__dirname, 'fontawesome')));
 
 // Multer setup for Cloudinary
 const upload = multer({ 
@@ -381,9 +388,33 @@ app.post('/api/complete-booking/:id', upload.single('payment_receipt'), async (r
     }
 });
 
-// Root route - serve index.html
+// Serve HTML files
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/admin-dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin-dashboard.html'));
+});
+
+app.get('/admin-login.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin-login.html'));
+});
+
+app.get('/standard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'standard.html'));
+});
+
+app.get('/executive.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'executive.html'));
+});
+
+app.get('/super\ executive.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'super executive.html'));
+});
+
+app.get('/Suite.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'Suite.html'));
 });
 
 app.get('/api/health', (req, res) => {
