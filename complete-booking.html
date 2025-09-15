@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Booking - Ashoka Hotel</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #644222 0%, #8B4513 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .booking-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin: 50px auto;
+            max-width: 600px;
+            overflow: hidden;
+        }
+        .booking-header {
+            background: #644222;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .booking-details {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #644222;
+        }
+        .payment-section {
+            padding: 30px;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code img {
+            max-width: 200px;
+            border: 3px solid #644222;
+            border-radius: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #644222;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background: #f8f9fa;
+        }
+        .btn-complete {
+            background: #644222;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            width: 100%;
+        }
+        .btn-complete:hover {
+            background: #8B4513;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="booking-container">
+            <div class="booking-header">
+                <h2><i class="fas fa-hotel"></i> Ashoka Hotel</h2>
+                <p>Complete Your Booking</p>
+            </div>
+
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                <p class="mt-3">Loading booking details...</p>
+            </div>
+
+            <div id="error" class="error" style="display: none;">
+                <h5><i class="fas fa-exclamation-triangle"></i> Booking Not Found</h5>
+                <p>This booking link has expired or is invalid.</p>
+            </div>
+
+            <div id="booking-content" style="display: none;">
+                <div class="booking-details">
+                    <h5><i class="fas fa-info-circle"></i> Booking Details</h5>
+                    <div class="row">
+                        <div class="col-6"><strong>Name:</strong></div>
+                        <div class="col-6" id="customerName">-</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Mobile:</strong></div>
+                        <div class="col-6" id="customerMobile">-</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Room:</strong></div>
+                        <div class="col-6" id="roomType">-</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Adults:</strong></div>
+                        <div class="col-6" id="adults">-</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Total Amount:</strong></div>
+                        <div class="col-6"><strong class="text-success">₹<span id="totalAmount">-</span></strong></div>
+                    </div>
+                </div>
+
+                <div class="payment-section">
+                    <h5><i class="fas fa-credit-card"></i> Payment</h5>
+                    <p class="text-muted">Please make payment and upload receipt to confirm booking.</p>
+                    
+                    <div class="qr-code">
+                        <img src="images/qr-code.png" alt="Payment QR Code">
+                        <p class="mt-2"><strong>Scan to Pay</strong></p>
+                        <p class="text-muted">UPI ID: ashoka@paytm</p>
+                    </div>
+
+                    <form id="completeBookingForm">
+                        <div class="upload-area">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                            <h6>Upload Payment Receipt</h6>
+                            <p class="text-muted">Click to select or drag & drop your receipt</p>
+                            <input type="file" id="paymentReceipt" accept="image/*" required style="display: none;">
+                            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('paymentReceipt').click()">
+                                Choose File
+                            </button>
+                            <div id="fileName" class="mt-2 text-success"></div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-complete">
+                            <i class="fas fa-check-circle"></i> Complete Booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/vendor/jquery-3.6.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let preBookingId = null;
+
+        // Get booking ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        preBookingId = urlParams.get('id');
+
+        if (!preBookingId) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        } else {
+            loadBookingDetails();
+        }
+
+        async function loadBookingDetails() {
+            try {
+                const response = await fetch(`${API_BASE}/pre-booking/${preBookingId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const booking = data.preBooking;
+                    
+                    document.getElementById('customerName').textContent = booking.fullname;
+                    document.getElementById('customerMobile').textContent = booking.mobile;
+                    document.getElementById('roomType').textContent = booking.roomType;
+                    document.getElementById('adults').textContent = booking.adults;
+                    document.getElementById('totalAmount').textContent = booking.totalAmount;
+
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('booking-content').style.display = 'block';
+                } else {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('loading').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading booking:', error);
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // File selection handler
+        document.getElementById('paymentReceipt').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileName) {
+                document.getElementById('fileName').innerHTML = `<i class="fas fa-file-image"></i> ${fileName}`;
+            }
+        });
+
+        // Form submission
+        document.getElementById('completeBookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('paymentReceipt');
+            if (!fileInput.files[0]) {
+                alert('Please upload payment receipt');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('payment_receipt', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${API_BASE}/complete-booking/${preBookingId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`Booking completed successfully! Your Booking ID: ${result.bookingId}`);
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Booking failed: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Booking completion error:', error);
+                alert('Error completing booking');
+            }
+        });
+    </script>
+</body>
+</html>

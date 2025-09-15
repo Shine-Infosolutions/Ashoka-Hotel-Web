@@ -148,6 +148,9 @@
                     <a class="nav-link" href="#" onclick="showSection('bookings')">
                         <i class="fas fa-calendar-check"></i> Bookings
                     </a>
+                    <a class="nav-link" href="#" onclick="showSection('book-room')">
+                        <i class="fas fa-plus-circle"></i> Book a Room
+                    </a>
                 </nav>
                 <div style="position: absolute; bottom: 20px; width: 100%;">
                     <a class="nav-link" href="#" onclick="logout()" style="border: none;">
@@ -204,6 +207,109 @@
                     <div id="bookingsList" style="max-height: 70vh; overflow-y: auto; width: 100%;"></div>
                 </div>
 
+                <!-- Book a Room Section -->
+                <div id="book-room-section" style="display: none;">
+                    <h4 class="mb-4">Book a Room</h4>
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form id="adminBookingForm">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Full Name *</label>
+                                                    <input type="text" class="form-control" id="adminFullname" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Mobile Number *</label>
+                                                    <input type="tel" class="form-control" id="adminMobile" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Number of Adults *</label>
+                                                    <select class="form-control" id="adminAdults" required>
+                                                        <option value="">Select Adults</option>
+                                                        <option value="1">1 Adult</option>
+                                                        <option value="2">2 Adults</option>
+                                                        <option value="3">3 Adults</option>
+                                                        <option value="4">4 Adults</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Room Type *</label>
+                                                    <select class="form-control" id="adminRoom" required>
+                                                        <option value="">Select Room</option>
+                                                        <option value="Standard Room">Standard Room</option>
+                                                        <option value="Deluxe Room">Deluxe Room</option>
+                                                        <option value="Suite">Suite</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Occupancy</label>
+                                                    <select class="form-control" id="adminOccupancy">
+                                                        <option value="">Select Occupancy</option>
+                                                        <option value="Single">Single</option>
+                                                        <option value="Double">Double</option>
+                                                        <option value="Triple">Triple</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Total Amount *</label>
+                                                    <input type="number" class="form-control" id="adminAmount" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Payment Receipt (Optional)</label>
+                                            <input type="file" class="form-control-file" id="adminReceipt" accept="image/*">
+                                            <small class="text-muted">Upload payment receipt if available</small>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                                    <i class="fas fa-save"></i> Direct Book
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-success btn-lg btn-block" onclick="generateBookingLink()">
+                                                    <i class="fas fa-link"></i> Generate Link
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>Admin Booking</h5>
+                                    <p class="text-muted">As an admin, you can directly book rooms for customers without payment verification.</p>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> Direct booking</li>
+                                        <li><i class="fas fa-check text-success"></i> Auto-confirmed status</li>
+                                        <li><i class="fas fa-check text-success"></i> Optional receipt</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
             </div>
         </div>
@@ -241,6 +347,7 @@
             // Hide all sections
             document.getElementById('dashboard-section').style.display = 'none';
             document.getElementById('bookings-section').style.display = 'none';
+            document.getElementById('book-room-section').style.display = 'none';
 
             // Show selected section
             document.getElementById(section + '-section').style.display = 'block';
@@ -327,11 +434,11 @@
                                     <div class="col-lg-5 col-md-6 text-center mt-3 mt-md-0">
                                         <p><strong>Payment Receipt:</strong></p>
                                         ${booking.payment_receipt ? 
-                                            `<img src="http://localhost:3000/uploads/${booking.payment_receipt}" 
+                                            `<img src="${booking.payment_receipt}" 
                                                  class="payment-image img-fluid" 
-                                                 onclick="showImage('http://localhost:3000/uploads/${booking.payment_receipt}')"
+                                                 onclick="showImage('${booking.payment_receipt}')"
                                                  alt="Payment Receipt" style="max-width: 150px; cursor: pointer;">
-                                            <br><small class="text-muted d-block mt-1">${booking.payment_receipt}</small>` 
+                                            <br><small class="text-muted d-block mt-1">Cloudinary Image</small>` 
                                             : '<p class="text-muted">No receipt uploaded</p>'
                                         }
                                     </div>
@@ -412,6 +519,92 @@
             });
         });
         
+        // Generate booking link function
+        async function generateBookingLink() {
+            const formData = {
+                fullname: document.getElementById('adminFullname').value,
+                mobile: document.getElementById('adminMobile').value,
+                adult: document.getElementById('adminAdults').value,
+                room: document.getElementById('adminRoom').value,
+                occupancy: document.getElementById('adminOccupancy').value,
+                total_amount: document.getElementById('adminAmount').value
+            };
+            
+            // Validate required fields
+            if (!formData.fullname || !formData.mobile || !formData.adult || !formData.room || !formData.total_amount) {
+                alert('Please fill all required fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/create-booking-link`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const linkText = `Hi ${formData.fullname}, please complete your booking: ${result.bookingLink}`;
+                    
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(linkText).then(() => {
+                        alert(`Booking link generated and copied to clipboard!\n\nLink: ${result.bookingLink}`);
+                    }).catch(() => {
+                        alert(`Booking link generated!\n\nLink: ${result.bookingLink}\n\nPlease copy this link manually.`);
+                    });
+                    
+                    document.getElementById('adminBookingForm').reset();
+                } else {
+                    alert('Failed to generate link: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Link generation error:', error);
+                alert('Error generating booking link');
+            }
+        }
+
+        // Admin booking form handler
+        document.getElementById('adminBookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('fullname', document.getElementById('adminFullname').value);
+            formData.append('mobile', document.getElementById('adminMobile').value);
+            formData.append('adult', document.getElementById('adminAdults').value);
+            formData.append('room', document.getElementById('adminRoom').value);
+            formData.append('occupancy', document.getElementById('adminOccupancy').value);
+            formData.append('total_amount', document.getElementById('adminAmount').value);
+            
+            const receiptFile = document.getElementById('adminReceipt').files[0];
+            if (receiptFile) {
+                formData.append('payment_receipt', receiptFile);
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/book-room`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Room booked successfully! Booking ID: ${result.bookingId}`);
+                    document.getElementById('adminBookingForm').reset();
+                    loadDashboard(); // Refresh stats
+                } else {
+                    alert('Booking failed: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Booking error:', error);
+                alert('Error submitting booking');
+            }
+        });
+
         // Load dashboard on page load
         loadDashboard();
     </script>
