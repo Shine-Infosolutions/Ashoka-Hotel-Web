@@ -72,6 +72,10 @@ const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 console.log('🔄 Connecting to MongoDB Atlas...');
+
+// Global connection state
+let isMongoConnected = false;
+
 mongoose.connect(MONGODB_URI, {
     serverSelectionTimeoutMS: 30000,
     socketTimeoutMS: 45000,
@@ -79,15 +83,17 @@ mongoose.connect(MONGODB_URI, {
     maxPoolSize: 10,
     minPoolSize: 5,
     maxIdleTimeMS: 30000,
-    bufferCommands: false,
+    bufferCommands: true, // Enable buffering to prevent errors
 })
     .then(() => {
         console.log('✅ MongoDB Atlas Connected Successfully');
         console.log('📊 Database ready for operations');
+        isMongoConnected = true;
     })
     .catch(err => {
         console.log('❌ MongoDB connection error:', err.message);
         console.log('⚠️  Server will continue but database operations may fail');
+        isMongoConnected = false;
     });
 
 // Routes
@@ -102,26 +108,46 @@ app.post('/api/admin/login', (req, res) => {
 
 app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => {
     try {
+        console.log('📝 Booking request received:', req.body);
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
+        
+        // Validate required fields
+        if (!fullname || !mobile || !adult || !room || !total_amount) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required fields' 
+            });
+        }
         
         let receiptUrl = null;
         
         // Upload to Cloudinary if file exists
         if (req.file) {
-            const result = await new Promise((resolve, reject) => {
-                cloudinary.uploader.upload_stream(
-                    { 
-                        resource_type: 'image',
-                        folder: 'ashoka-receipts',
-                        public_id: `receipt-${Date.now()}`
-                    },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                ).end(req.file.buffer);
-            });
-            receiptUrl = result.secure_url;
+            try {
+                console.log('📤 Uploading to Cloudinary...');
+                const result = await new Promise((resolve, reject) => {
+                    cloudinary.uploader.upload_stream(
+                        { 
+                            resource_type: 'image',
+                            folder: 'ashoka-receipts',
+                            public_id: `receipt-${Date.now()}`
+                        },
+                        (error, result) => {
+                            if (error) {
+                                console.error('Cloudinary error:', error);
+                                reject(error);
+                            } else {
+                                console.log('✅ Cloudinary upload success');
+                                resolve(result);
+                            }
+                        }
+                    ).end(req.file.buffer);
+                });
+                receiptUrl = result.secure_url;
+            } catch (cloudError) {
+                console.error('❌ Cloudinary upload failed:', cloudError);
+                // Continue without receipt URL
+            }
         }
         
         const bookingData = {
@@ -135,8 +161,10 @@ app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => 
             paymentReceipt: receiptUrl
         };
 
+        console.log('💾 Saving booking to database...');
         const booking = new Booking(bookingData);
         await booking.save();
+        console.log('✅ Booking saved successfully');
 
         res.json({
             success: true,
@@ -145,12 +173,25 @@ app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => 
         });
     } catch (error) {
         console.error('❌ Booking error:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message || 'Internal server error',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
 app.get('/api/admin/bookings', async (req, res) => {
     try {
+        console.log('📋 Loading admin bookings...');
+        
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️  MongoDB not connected, returning empty bookings');
+            return res.json({ success: true, bookings: [] });
+        }
+        
         const bookings = await Booking.find().sort({ createdAt: -1 });
         const formattedBookings = bookings.map(booking => ({
             id: booking.bookingId,
@@ -164,30 +205,47 @@ app.get('/api/admin/bookings', async (req, res) => {
             status: booking.bookingStatus,
             created_at: booking.createdAt
         }));
+        
+        console.log(`✅ Loaded ${formattedBookings.length} bookings`);
         res.json({ success: true, bookings: formattedBookings });
     } catch (error) {
+        console.error('❌ Bookings error:', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
 app.get('/api/admin/stats', async (req, res) => {
     try {
+        console.log('📊 Loading admin stats...');
+        
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⚠️  MongoDB not connected, returning default stats');
+            return res.json({
+                success: true,
+                stats: { 
+                    total_bookings: 0, 
+                    today_bookings: 0,
+                    pending_bookings: 0 
+                }
+            });
+        }
+        
         const total = await Booking.countDocuments();
         const pending = await Booking.countDocuments({ bookingStatus: 'pending' });
         
         // Get current date in YYYY-MM-DD format
         const today = new Date();
-        const todayStr = today.toISOString().split('T')[0]; // Gets YYYY-MM-DD
+        const todayStr = today.toISOString().split('T')[0];
         
-        // Find bookings created today by comparing date strings
+        // Find bookings created today
         const allBookings = await Booking.find({});
         const todayBookings = allBookings.filter(booking => {
             const bookingDate = booking.createdAt.toISOString().split('T')[0];
             return bookingDate === todayStr;
         });
         
-
-        
+        console.log('✅ Stats loaded successfully');
         res.json({
             success: true,
             stats: { 
@@ -197,6 +255,7 @@ app.get('/api/admin/stats', async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('❌ Stats error:', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -451,16 +510,22 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Error handlers
+// Error handlers with detailed logging
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    console.error('❌ Uncaught Exception:', err.message);
+    console.error('Stack:', err.stack);
 });
 
 process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Rejection:', err);
+    console.error('❌ Unhandled Rejection:', err.message);
+    console.error('Stack:', err.stack);
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log('📋 Make sure MongoDB is running on port 27017');
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log('📊 Environment check:');
+    console.log('- MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Missing');
+    console.log('- Cloudinary Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
+    console.log('- Cloudinary Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
+    console.log('- Cloudinary Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing');
 });
