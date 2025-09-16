@@ -69,48 +69,26 @@ const preBookingSchema = new mongoose.Schema({
 const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 
 // MongoDB connection with better error handling
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
 
 console.log('🔄 Connecting to MongoDB Atlas...');
 console.log('MongoDB URI:', MONGODB_URI ? 'Set' : 'Missing');
 
-// Connection helper function
-const ensureConnection = async () => {
-    if (mongoose.connection.readyState === 1) {
-        return true;
-    }
+// Simple connection for Vercel
+const connectDB = async () => {
+    if (mongoose.connection.readyState >= 1) return;
     
-    if (mongoose.connection.readyState === 0) {
+    try {
         await mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: 30000,
-            socketTimeoutMS: 45000,
-            connectTimeoutMS: 30000,
-            bufferMaxEntries: 0,
-            maxPoolSize: 10,
-            minPoolSize: 1,
-            maxIdleTimeMS: 30000,
-            bufferCommands: false,
-            retryWrites: true,
-            w: 'majority'
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000
         });
+        console.log('✅ MongoDB connected');
+    } catch (error) {
+        console.log('❌ MongoDB error:', error.message);
+        throw error;
     }
-    
-    // Wait for connection to be ready
-    let attempts = 0;
-    while (mongoose.connection.readyState !== 1 && attempts < 30) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-    }
-    
-    return mongoose.connection.readyState === 1;
 };
-
-// Initial connection
-ensureConnection().then(() => {
-    console.log('✅ MongoDB Atlas Connected Successfully');
-}).catch(err => {
-    console.log('❌ MongoDB connection error:', err.message);
-});
 
 // Routes
 app.post('/api/admin/login', (req, res) => {
@@ -126,14 +104,7 @@ app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => 
     try {
         console.log('📝 Booking request received:', req.body);
         
-        // Ensure MongoDB connection
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ 
-                success: false, 
-                error: 'Database connection unavailable' 
-            });
-        }
+        await connectDB();
         
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
@@ -212,11 +183,7 @@ app.get('/api/admin/bookings', async (req, res) => {
     try {
         console.log('📋 Loading admin bookings...');
         
-        // Ensure MongoDB connection
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.json({ success: true, bookings: [] });
-        }
+        await connectDB();
         
         const bookings = await Booking.find().sort({ createdAt: -1 });
         const formattedBookings = bookings.map(booking => ({
@@ -244,18 +211,7 @@ app.get('/api/admin/stats', async (req, res) => {
     try {
         console.log('📊 Loading admin stats...');
         
-        // Ensure MongoDB connection
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.json({
-                success: true,
-                stats: { 
-                    total_bookings: 0, 
-                    today_bookings: 0,
-                    pending_bookings: 0 
-                }
-            });
-        }
+        await connectDB();
         
         const total = await Booking.countDocuments();
         const pending = await Booking.countDocuments({ bookingStatus: 'pending' });
