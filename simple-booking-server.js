@@ -5,26 +5,28 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
+const PORT = 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Multer setup for memory storage (Vercel doesn't support file system)
-const upload = multer({ 
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 }
+// Multer setup
+const storage = multer.diskStorage({
+    destination: 'uploads/',
+    filename: (req, file, cb) => {
+        cb(null, 'receipt-' + Date.now() + path.extname(file.originalname));
+    }
 });
+const upload = multer({ storage });
 
 // MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
 
-if (mongoose.connection.readyState === 0) {
-    mongoose.connect(MONGODB_URI)
-        .then(() => console.log('✅ MongoDB Atlas connected'))
-        .catch(() => console.log('❌ MongoDB not connected, using memory storage'));
-}
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log('✅ MongoDB Atlas connected'))
+    .catch(() => console.log('❌ MongoDB not connected, using memory storage'));
 
 // Booking Schema
 const bookingSchema = new mongoose.Schema({
@@ -45,7 +47,7 @@ const Booking = mongoose.model('Booking', bookingSchema);
 let bookings = [];
 
 // Routes
-app.post('/bookings', upload.single('payment_receipt'), async (req, res) => {
+app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => {
     try {
         const { fullname, mobile, adult, room, total_amount } = req.body;
         
@@ -56,7 +58,7 @@ app.post('/bookings', upload.single('payment_receipt'), async (req, res) => {
             adults: parseInt(adult),
             roomType: room,
             totalAmount: parseInt(total_amount),
-            paymentReceipt: req.file ? `receipt-${Date.now()}` : null,
+            paymentReceipt: req.file ? req.file.filename : null,
             bookingStatus: 'pending'
         };
 
@@ -80,7 +82,7 @@ app.post('/bookings', upload.single('payment_receipt'), async (req, res) => {
     }
 });
 
-app.get('/admin/bookings', async (req, res) => {
+app.get('/api/admin/bookings', async (req, res) => {
     try {
         let allBookings = [];
         try {
@@ -107,7 +109,7 @@ app.get('/admin/bookings', async (req, res) => {
     }
 });
 
-app.get('/admin/stats', async (req, res) => {
+app.get('/api/admin/stats', async (req, res) => {
     try {
         let total = 0, pending = 0;
         try {
@@ -127,7 +129,7 @@ app.get('/admin/stats', async (req, res) => {
     }
 });
 
-app.post('/admin/login', (req, res) => {
+app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
     if (username === 'admin' && password === 'admin123') {
         res.json({ success: true, token: 'admin-token-123' });
@@ -136,7 +138,7 @@ app.post('/admin/login', (req, res) => {
     }
 });
 
-app.put('/admin/bookings/:id', async (req, res) => {
+app.put('/api/admin/bookings/:id', async (req, res) => {
     try {
         const { status } = req.body;
         try {
@@ -154,9 +156,12 @@ app.put('/admin/bookings/:id', async (req, res) => {
     }
 });
 
-app.get('/health', (req, res) => {
+app.use('/uploads', express.static('uploads'));
+
+app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Export for Vercel
-module.exports = app;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

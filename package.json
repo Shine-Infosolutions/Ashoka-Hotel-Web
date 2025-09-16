@@ -2,11 +2,11 @@
   "name": "ashoka-hotel-web",
   "version": "1.0.0",
   "description": "Ashoka Hotel Frontend and Backend Combined",
-  "main": "api/index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node simple-booking-server.js",
+    "start": "node server.js",
     "build": "echo 'No build required'",
-    "dev": "nodemon simple-booking-server.js",
+    "dev": "nodemon server.js",
     "vercel-build": "echo 'Ready for deployment'"
   },
   "dependencies": {
