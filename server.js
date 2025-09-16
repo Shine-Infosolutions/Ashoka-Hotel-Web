@@ -68,6 +68,15 @@ const preBookingSchema = new mongoose.Schema({
 
 const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 
+// Room availability schema
+const roomAvailabilitySchema = new mongoose.Schema({
+    roomType: { type: String, required: true, unique: true },
+    isAvailable: { type: Boolean, default: true },
+    updatedAt: { type: Date, default: Date.now }
+});
+
+const RoomAvailability = mongoose.model('RoomAvailability', roomAvailabilitySchema);
+
 // MongoDB connection with better error handling
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
 
@@ -252,6 +261,64 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
             { bookingStatus: status }
         );
         res.json({ success: true, message: 'Status updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Room availability routes
+app.get('/api/admin/room-availability', async (req, res) => {
+    try {
+        await connectDB();
+        
+        const rooms = await RoomAvailability.find();
+        const roomTypes = ['Standard Room', 'Executive Room', 'Super Executive Room', 'Suite Room'];
+        
+        // Initialize rooms if not exist
+        for (const roomType of roomTypes) {
+            const exists = rooms.find(r => r.roomType === roomType);
+            if (!exists) {
+                await RoomAvailability.create({ roomType, isAvailable: true });
+            }
+        }
+        
+        const updatedRooms = await RoomAvailability.find();
+        res.json({ success: true, rooms: updatedRooms });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.put('/api/admin/room-availability/:roomType', async (req, res) => {
+    try {
+        await connectDB();
+        
+        const { roomType } = req.params;
+        const { isAvailable } = req.body;
+        
+        await RoomAvailability.findOneAndUpdate(
+            { roomType },
+            { isAvailable, updatedAt: new Date() },
+            { upsert: true }
+        );
+        
+        res.json({ success: true, message: 'Room availability updated' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/room-availability/:roomType', async (req, res) => {
+    try {
+        await connectDB();
+        
+        const { roomType } = req.params;
+        const room = await RoomAvailability.findOne({ roomType });
+        
+        res.json({ 
+            success: true, 
+            isAvailable: room ? room.isAvailable : true 
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

@@ -227,6 +227,9 @@
                     <a class="nav-link" href="#" onclick="showSection('book-room')">
                         <i class="fas fa-plus-circle"></i> Book a Room
                     </a>
+                    <a class="nav-link" href="#" onclick="showSection('room-control')">
+                        <i class="fas fa-toggle-on"></i> Room Control
+                    </a>
                 </nav>
                 <div style="position: absolute; bottom: 20px; width: 100%;">
                     <a class="nav-link" href="#" onclick="logout()" style="border: none;">
@@ -281,6 +284,17 @@
                 <div id="bookings-section" style="display: none;">
                     <h4 class="mb-4">Customer Bookings</h4>
                     <div id="bookingsList" style="max-height: 70vh; overflow-y: auto; width: 100%;"></div>
+                </div>
+
+                <!-- Room Control Section -->
+                <div id="room-control-section" style="display: none;">
+                    <h4 class="mb-4">Room Availability Control</h4>
+                    <div class="booking-card">
+                        <h6 class="text-primary mb-3"><i class="fas fa-bed"></i> Enable/Disable Room Booking</h6>
+                        <div id="roomControlList">
+                            <!-- Room controls will be loaded here -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Book a Room Section -->
@@ -446,6 +460,7 @@
             document.getElementById('dashboard-section').style.display = 'none';
             document.getElementById('bookings-section').style.display = 'none';
             document.getElementById('book-room-section').style.display = 'none';
+            document.getElementById('room-control-section').style.display = 'none';
 
             // Show/hide main header based on section
             const mainHeader = document.getElementById('mainHeader');
@@ -466,6 +481,8 @@
 
             if (section === 'bookings') {
                 loadBookings();
+            } else if (section === 'room-control') {
+                loadRoomControls();
             }
         }
 
@@ -788,8 +805,82 @@
             }
         });
 
-        // Load dashboard on page load
-        loadDashboard();
+        // Load room controls
+        async function loadRoomControls() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/room-availability`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const roomControlList = document.getElementById('roomControlList');
+                    let html = '';
+                    
+                    data.rooms.forEach(room => {
+                        const toggleClass = room.isAvailable ? 'btn-success' : 'btn-danger';
+                        const toggleText = room.isAvailable ? 'Enabled' : 'Disabled';
+                        const toggleIcon = room.isAvailable ? 'fa-toggle-on' : 'fa-toggle-off';
+                        
+                        html += `
+                            <div class="row mb-3 align-items-center p-3" style="border: 1px solid #ddd; border-radius: 8px;">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">${room.roomType}</h6>
+                                    <small class="text-muted">Control booking availability</small>
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <button class="btn ${toggleClass}" onclick="toggleRoomAvailability('${room.roomType}', ${!room.isAvailable})">
+                                        <i class="fas ${toggleIcon}"></i> ${toggleText}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    roomControlList.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading room controls:', error);
+            }
+        }
+        
+        // Toggle room availability
+        async function toggleRoomAvailability(roomType, isAvailable) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/room-availability/${encodeURIComponent(roomType)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ isAvailable })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadRoomControls(); // Reload controls
+                    alert(`${roomType} booking ${isAvailable ? 'enabled' : 'disabled'} successfully!`);
+                } else {
+                    alert('Failed to update room availability');
+                }
+            } catch (error) {
+                console.error('Error toggling room availability:', error);
+                alert('Error updating room availability');
+            }
+        }
+
+        // Check authentication on page load
+        function checkAuth() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize page
+        if (checkAuth()) {
+            loadDashboard();
+        }
     </script>
 </body>
 </html>

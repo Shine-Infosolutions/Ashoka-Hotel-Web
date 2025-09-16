@@ -353,7 +353,7 @@
                                     <li>
                                         <i class="icon fal fa-map-marker-check"></i>
                                         <span>
-                                            <a href="https://maps.app.goo.gl/TG2XStoKorJmugz16" target="_blank"
+                                            <a href="https://www.google.com/maps/place/Ashoka+Hotel+%26+Banquet+Hall%2FWhere+Comfort+Meets+Luxury/@26.7475055,83.3957202,15z/data=!3m1!4b1!4m10!3m9!1s0x39914570ddc7b6cf:0x989832251e9717ac!5m3!1s2025-09-16!4m1!1i2!8m2!3d26.7474875!4d83.4141743!16s%2Fg%2F11vqh39d8d?entry=ttu&g_ep=EgoyMDI1MDkxMC4wIKXMDSoASAFQAw%3D%3D" target="_blank"
                                                 rel="noopener noreferrer">
                                                 Kasia - Gorakhpur Rd, beside Indian Oil Petrol Pump, Mohaddipur,<br>
                                                 Gorakhpur, Uttar Pradesh 273008
@@ -603,10 +603,43 @@
             }
         }
 
+        // Check room availability
+        async function checkRoomAvailability() {
+            try {
+                const response = await fetch('/api/room-availability/Suite Room');
+                const data = await response.json();
+                
+                if (data.success && !data.isAvailable) {
+                    // Replace entire booking section with unavailable card
+                    const bookingSection = document.querySelector('.booking');
+                    if (bookingSection) {
+                        bookingSection.innerHTML = `
+                            <div class="contact-bg" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #f8d7da, #f5c6cb); border-radius: 10px; border: 2px solid #dc3545;">
+                                <div style="margin-bottom: 20px;">
+                                    <i class="fas fa-ban" style="font-size: 60px; color: #dc3545; margin-bottom: 15px;"></i>
+                                </div>
+                                <h3 style="color: #721c24; margin-bottom: 15px; font-weight: bold;">Room Not Available</h3>
+                                <p style="color: #721c24; margin-bottom: 20px; font-size: 16px;">Suite Room booking is currently disabled by admin.</p>
+                                <div style="background: rgba(255,255,255,0.8); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                    <p style="color: #721c24; margin: 0; font-size: 14px;"><strong>Status:</strong> Temporarily Unavailable</p>
+                                </div>
+                                <a href="tel:+916388491244" class="btn" style="background: #644222; color: white; padding: 12px 25px; border-radius: 25px; text-decoration: none; display: inline-block; font-weight: bold;">
+                                    <i class="fas fa-phone"></i> Call +91 6388491244
+                                </a>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking room availability:', error);
+            }
+        }
+
         // Initialize price calculation and load pre-booking data on page load
         document.addEventListener('DOMContentLoaded', function() {
             calculatePrice();
             loadPreBookingData();
+            checkRoomAvailability();
         });
     </script>
 
