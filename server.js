@@ -608,11 +608,17 @@ process.on('unhandledRejection', (err) => {
     console.error('Stack:', err.stack);
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log('📊 Environment check:');
-    console.log('- MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Missing');
-    console.log('- Cloudinary Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
-    console.log('- Cloudinary Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
-    console.log('- Cloudinary Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing');
-});
+// Export for Vercel
+module.exports = app;
+
+// Only listen when running locally
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log('📊 Environment check:');
+        console.log('- MongoDB URI:', process.env.MONGODB_URI ? 'Set' : 'Missing');
+        console.log('- Cloudinary Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
+        console.log('- Cloudinary Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
+        console.log('- Cloudinary Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing');
+    });
+}
