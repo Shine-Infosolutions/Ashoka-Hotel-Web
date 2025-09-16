@@ -1,1 +1,5 @@
-module.exports = require('../simple-booking-server.js');
+const app = require('../simple-booking-server.js');
+
+module.exports = (req, res) => {
+  return app(req, res);
+};
