@@ -22,8 +22,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/ashoka_hotel')
-    .then(() => console.log('✅ MongoDB connected'))
+const MONGODB_URI = 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
+
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log('✅ MongoDB Atlas connected'))
     .catch(() => console.log('❌ MongoDB not connected, using memory storage'));
 
 // Booking Schema

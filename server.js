@@ -74,52 +74,42 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:
 console.log('🔄 Connecting to MongoDB Atlas...');
 console.log('MongoDB URI:', MONGODB_URI ? 'Set' : 'Missing');
 
-// Global connection state
-let isMongoConnected = false;
-
-// Mongoose connection with retry logic
-const connectWithRetry = () => {
-    mongoose.connect(MONGODB_URI, {
-        serverSelectionTimeoutMS: 30000,
-        socketTimeoutMS: 45000,
-        connectTimeoutMS: 30000,
-        bufferMaxEntries: 0,
-        maxPoolSize: 10,
-        minPoolSize: 1,
-        maxIdleTimeMS: 30000,
-        bufferCommands: false, // Disable buffering for immediate errors
-        retryWrites: true,
-        w: 'majority'
-    })
-    .then(() => {
-        console.log('✅ MongoDB Atlas Connected Successfully');
-        console.log('📊 Database ready for operations');
-        isMongoConnected = true;
-    })
-    .catch(err => {
-        console.log('❌ MongoDB connection error:', err.message);
-        console.log('⚠️  Retrying connection in 5 seconds...');
-        isMongoConnected = false;
-        setTimeout(connectWithRetry, 5000);
-    });
+// Connection helper function
+const ensureConnection = async () => {
+    if (mongoose.connection.readyState === 1) {
+        return true;
+    }
+    
+    if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 30000,
+            bufferMaxEntries: 0,
+            maxPoolSize: 10,
+            minPoolSize: 1,
+            maxIdleTimeMS: 30000,
+            bufferCommands: false,
+            retryWrites: true,
+            w: 'majority'
+        });
+    }
+    
+    // Wait for connection to be ready
+    let attempts = 0;
+    while (mongoose.connection.readyState !== 1 && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+    }
+    
+    return mongoose.connection.readyState === 1;
 };
 
-connectWithRetry();
-
-// Connection event handlers
-mongoose.connection.on('connected', () => {
-    console.log('✅ Mongoose connected to MongoDB');
-    isMongoConnected = true;
-});
-
-mongoose.connection.on('error', (err) => {
-    console.log('❌ Mongoose connection error:', err);
-    isMongoConnected = false;
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('⚠️  Mongoose disconnected');
-    isMongoConnected = false;
+// Initial connection
+ensureConnection().then(() => {
+    console.log('✅ MongoDB Atlas Connected Successfully');
+}).catch(err => {
+    console.log('❌ MongoDB connection error:', err.message);
 });
 
 // Routes
@@ -135,6 +125,16 @@ app.post('/api/admin/login', (req, res) => {
 app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => {
     try {
         console.log('📝 Booking request received:', req.body);
+        
+        // Ensure MongoDB connection
+        const connected = await ensureConnection();
+        if (!connected) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database connection unavailable' 
+            });
+        }
+        
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
         // Validate required fields
@@ -212,9 +212,9 @@ app.get('/api/admin/bookings', async (req, res) => {
     try {
         console.log('📋 Loading admin bookings...');
         
-        // Check if MongoDB is connected
-        if (mongoose.connection.readyState !== 1) {
-            console.log('⚠️  MongoDB not connected, returning empty bookings');
+        // Ensure MongoDB connection
+        const connected = await ensureConnection();
+        if (!connected) {
             return res.json({ success: true, bookings: [] });
         }
         
@@ -244,9 +244,9 @@ app.get('/api/admin/stats', async (req, res) => {
     try {
         console.log('📊 Loading admin stats...');
         
-        // Check if MongoDB is connected
-        if (mongoose.connection.readyState !== 1) {
-            console.log('⚠️  MongoDB not connected, returning default stats');
+        // Ensure MongoDB connection
+        const connected = await ensureConnection();
+        if (!connected) {
             return res.json({
                 success: true,
                 stats: { 
@@ -288,6 +288,11 @@ app.get('/api/admin/stats', async (req, res) => {
 
 app.put('/api/admin/bookings/:id', async (req, res) => {
     try {
+        const connected = await ensureConnection();
+        if (!connected) {
+            return res.status(503).json({ success: false, error: 'Database unavailable' });
+        }
+        
         const { status } = req.body;
         await Booking.findOneAndUpdate(
             { bookingId: req.params.id },
@@ -303,9 +308,9 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
     try {
         console.log('📝 Create booking link request:', req.body);
         
-        // Check MongoDB connection
-        if (mongoose.connection.readyState !== 1) {
-            console.log('❌ MongoDB not connected, connection state:', mongoose.connection.readyState);
+        // Ensure MongoDB connection
+        const connected = await ensureConnection();
+        if (!connected) {
             return res.status(503).json({ 
                 success: false, 
                 error: 'Database connection unavailable. Please try again later.' 
@@ -385,6 +390,11 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
 
 app.post('/api/admin/book-room', upload.single('payment_receipt'), async (req, res) => {
     try {
+        const connected = await ensureConnection();
+        if (!connected) {
+            return res.status(503).json({ success: false, error: 'Database unavailable' });
+        }
+        
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
         let receiptUrl = null;
@@ -437,6 +447,11 @@ app.post('/api/admin/book-room', upload.single('payment_receipt'), async (req, r
 
 app.get('/api/pre-booking/:id', async (req, res) => {
     try {
+        const connected = await ensureConnection();
+        if (!connected) {
+            return res.status(503).json({ success: false, error: 'Database unavailable' });
+        }
+        
         const preBooking = await PreBooking.findOne({ 
             preBookingId: req.params.id,
             status: 'pending',
@@ -465,6 +480,11 @@ app.get('/api/pre-booking/:id', async (req, res) => {
 
 app.post('/api/complete-booking/:id', upload.single('payment_receipt'), async (req, res) => {
     try {
+        const connected = await ensureConnection();
+        if (!connected) {
+            return res.status(503).json({ success: false, error: 'Database unavailable' });
+        }
+        
         const preBooking = await PreBooking.findOne({ 
             preBookingId: req.params.id,
             status: 'pending',
