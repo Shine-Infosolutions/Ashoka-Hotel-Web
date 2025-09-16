@@ -45,7 +45,7 @@ const Booking = mongoose.model('Booking', bookingSchema);
 let bookings = [];
 
 // Routes
-app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => {
+app.post('/bookings', upload.single('payment_receipt'), async (req, res) => {
     try {
         const { fullname, mobile, adult, room, total_amount } = req.body;
         
@@ -80,7 +80,7 @@ app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => 
     }
 });
 
-app.get('/api/admin/bookings', async (req, res) => {
+app.get('/admin/bookings', async (req, res) => {
     try {
         let allBookings = [];
         try {
@@ -107,7 +107,7 @@ app.get('/api/admin/bookings', async (req, res) => {
     }
 });
 
-app.get('/api/admin/stats', async (req, res) => {
+app.get('/admin/stats', async (req, res) => {
     try {
         let total = 0, pending = 0;
         try {
@@ -127,7 +127,7 @@ app.get('/api/admin/stats', async (req, res) => {
     }
 });
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/admin/login', (req, res) => {
     const { username, password } = req.body;
     if (username === 'admin' && password === 'admin123') {
         res.json({ success: true, token: 'admin-token-123' });
@@ -136,7 +136,7 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
-app.put('/api/admin/bookings/:id', async (req, res) => {
+app.put('/admin/bookings/:id', async (req, res) => {
     try {
         const { status } = req.body;
         try {
@@ -154,7 +154,7 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
     }
 });
 
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
