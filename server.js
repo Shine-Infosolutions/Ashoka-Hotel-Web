@@ -244,10 +244,7 @@ app.get('/api/admin/stats', async (req, res) => {
 
 app.put('/api/admin/bookings/:id', async (req, res) => {
     try {
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ success: false, error: 'Database unavailable' });
-        }
+        await connectDB();
         
         const { status } = req.body;
         await Booking.findOneAndUpdate(
@@ -264,14 +261,7 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
     try {
         console.log('📝 Create booking link request:', req.body);
         
-        // Ensure MongoDB connection
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ 
-                success: false, 
-                error: 'Database connection unavailable. Please try again later.' 
-            });
-        }
+        await connectDB();
         
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
@@ -346,10 +336,7 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
 
 app.post('/api/admin/book-room', upload.single('payment_receipt'), async (req, res) => {
     try {
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ success: false, error: 'Database unavailable' });
-        }
+        await connectDB();
         
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
         
@@ -403,10 +390,7 @@ app.post('/api/admin/book-room', upload.single('payment_receipt'), async (req, r
 
 app.get('/api/pre-booking/:id', async (req, res) => {
     try {
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ success: false, error: 'Database unavailable' });
-        }
+        await connectDB();
         
         const preBooking = await PreBooking.findOne({ 
             preBookingId: req.params.id,
@@ -436,10 +420,7 @@ app.get('/api/pre-booking/:id', async (req, res) => {
 
 app.post('/api/complete-booking/:id', upload.single('payment_receipt'), async (req, res) => {
     try {
-        const connected = await ensureConnection();
-        if (!connected) {
-            return res.status(503).json({ success: false, error: 'Database unavailable' });
-        }
+        await connectDB();
         
         const preBooking = await PreBooking.findOne({ 
             preBookingId: req.params.id,
