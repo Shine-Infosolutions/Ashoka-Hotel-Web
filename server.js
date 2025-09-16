@@ -72,19 +72,25 @@ const PreBooking = mongoose.model('PreBooking', preBookingSchema);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
 console.log('🔄 Connecting to MongoDB Atlas...');
+console.log('MongoDB URI:', MONGODB_URI ? 'Set' : 'Missing');
 
 // Global connection state
 let isMongoConnected = false;
 
-mongoose.connect(MONGODB_URI, {
-    serverSelectionTimeoutMS: 30000,
-    socketTimeoutMS: 45000,
-    bufferMaxEntries: 0,
-    maxPoolSize: 10,
-    minPoolSize: 5,
-    maxIdleTimeMS: 30000,
-    bufferCommands: true, // Enable buffering to prevent errors
-})
+// Mongoose connection with retry logic
+const connectWithRetry = () => {
+    mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 30000,
+        bufferMaxEntries: 0,
+        maxPoolSize: 10,
+        minPoolSize: 1,
+        maxIdleTimeMS: 30000,
+        bufferCommands: false, // Disable buffering for immediate errors
+        retryWrites: true,
+        w: 'majority'
+    })
     .then(() => {
         console.log('✅ MongoDB Atlas Connected Successfully');
         console.log('📊 Database ready for operations');
@@ -92,9 +98,29 @@ mongoose.connect(MONGODB_URI, {
     })
     .catch(err => {
         console.log('❌ MongoDB connection error:', err.message);
-        console.log('⚠️  Server will continue but database operations may fail');
+        console.log('⚠️  Retrying connection in 5 seconds...');
         isMongoConnected = false;
+        setTimeout(connectWithRetry, 5000);
     });
+};
+
+connectWithRetry();
+
+// Connection event handlers
+mongoose.connection.on('connected', () => {
+    console.log('✅ Mongoose connected to MongoDB');
+    isMongoConnected = true;
+});
+
+mongoose.connection.on('error', (err) => {
+    console.log('❌ Mongoose connection error:', err);
+    isMongoConnected = false;
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('⚠️  Mongoose disconnected');
+    isMongoConnected = false;
+});
 
 // Routes
 app.post('/api/admin/login', (req, res) => {
@@ -275,7 +301,26 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
 
 app.post('/api/admin/create-booking-link', async (req, res) => {
     try {
+        console.log('📝 Create booking link request:', req.body);
+        
+        // Check MongoDB connection
+        if (mongoose.connection.readyState !== 1) {
+            console.log('❌ MongoDB not connected, connection state:', mongoose.connection.readyState);
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database connection unavailable. Please try again later.' 
+            });
+        }
+        
         const { fullname, mobile, adult, room, occupancy, total_amount } = req.body;
+        
+        // Validate required fields
+        if (!fullname || !mobile || !adult || !room || !total_amount) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required fields' 
+            });
+        }
         
         const preBookingId = 'PRE' + Date.now();
         
@@ -301,8 +346,17 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
             bookingLink
         };
 
+        console.log('💾 Saving pre-booking to database...');
         const preBooking = new PreBooking(preBookingData);
-        await preBooking.save();
+        
+        // Set a timeout for the save operation
+        const savePromise = preBooking.save();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database operation timeout')), 15000)
+        );
+        
+        await Promise.race([savePromise, timeoutPromise]);
+        console.log('✅ Pre-booking saved successfully');
 
         res.json({
             success: true,
@@ -311,8 +365,21 @@ app.post('/api/admin/create-booking-link', async (req, res) => {
             message: 'Booking link created successfully'
         });
     } catch (error) {
-        console.error('❌ Pre-booking error:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Pre-booking error:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        let errorMessage = 'Failed to create booking link';
+        if (error.message.includes('timeout')) {
+            errorMessage = 'Database connection timeout. Please check your internet connection and try again.';
+        } else if (error.message.includes('buffering')) {
+            errorMessage = 'Database connection issue. Please try again in a moment.';
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            error: errorMessage,
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
