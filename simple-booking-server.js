@@ -5,28 +5,26 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Multer setup
-const storage = multer.diskStorage({
-    destination: 'uploads/',
-    filename: (req, file, cb) => {
-        cb(null, 'receipt-' + Date.now() + path.extname(file.originalname));
-    }
+// Multer setup for memory storage (Vercel doesn't support file system)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
-const upload = multer({ storage });
 
 // MongoDB connection
-const MONGODB_URI = 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk8113347_db_user:sDOTrPq6tzLJnbrA@cluster0.qjf61mx.mongodb.net/ashoka-hotel?retryWrites=true&w=majority&appName=Cluster0';
 
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Atlas connected'))
-    .catch(() => console.log('❌ MongoDB not connected, using memory storage'));
+if (mongoose.connection.readyState === 0) {
+    mongoose.connect(MONGODB_URI)
+        .then(() => console.log('✅ MongoDB Atlas connected'))
+        .catch(() => console.log('❌ MongoDB not connected, using memory storage'));
+}
 
 // Booking Schema
 const bookingSchema = new mongoose.Schema({
@@ -58,7 +56,7 @@ app.post('/api/bookings', upload.single('payment_receipt'), async (req, res) => 
             adults: parseInt(adult),
             roomType: room,
             totalAmount: parseInt(total_amount),
-            paymentReceipt: req.file ? req.file.filename : null,
+            paymentReceipt: req.file ? `receipt-${Date.now()}` : null,
             bookingStatus: 'pending'
         };
 
@@ -156,12 +154,9 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
     }
 });
 
-app.use('/uploads', express.static('uploads'));
-
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+// Export for Vercel
+module.exports = app;
