@@ -446,6 +446,8 @@
 
     <script src="js/vendor/jquery-3.6.0.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfkit@0.13.0/js/pdfkit.standalone.js"></script>
+    <script src="https://github.com/devongovett/blob-stream/releases/download/v0.1.3/blob-stream.js"></script>
     <script>
         const API_BASE = '/api';
         let authToken = 'admin-token-123'; // Simplified for testing
@@ -518,6 +520,9 @@
                     const bookings = data.bookings;
                     const bookingsList = document.getElementById('bookingsList');
                     
+                    // Store bookings globally for PDF generation
+                    window.currentBookings = bookings;
+                    
                     if (!bookings || bookings.length === 0) {
                         bookingsList.innerHTML = '<div class="alert alert-info">No bookings found.</div>';
                         return;
@@ -551,6 +556,9 @@
                                             </button>
                                             <button class="btn btn-sm btn-warning ml-2" onclick="updateStatus('${booking.id}', 'pending')">
                                                 Pending
+                                            </button>
+                                            <button class="btn btn-sm btn-info ml-2" onclick="viewReceipt('${booking.id}')">
+                                                <i class="fas fa-eye"></i> View Receipt
                                             </button>
                                         </div>
                                     </div>
@@ -592,6 +600,10 @@
                 });
                 
                 if (response.ok) {
+                    if (status === 'confirmed') {
+                        // Generate PDF receipt when booking is confirmed
+                        generateBookingReceipt(bookingId);
+                    }
                     loadBookings(); // Reload bookings
                     alert('Status updated successfully!');
                 } else {
@@ -601,6 +613,214 @@
                 console.error('Error updating status:', error);
                 alert('Error updating status');
             }
+        }
+
+        function generateBookingReceipt(bookingId, viewOnly = false) {
+            // Find booking data
+            const bookingData = window.currentBookings?.find(b => b.id === bookingId);
+            if (!bookingData) {
+                console.error('Booking data not found');
+                return;
+            }
+
+            // Create PDF document
+            const doc = new PDFDocument({ margin: 50 });
+            const stream = doc.pipe(blobStream());
+
+            // Add logo
+            const logoImg = new Image();
+            logoImg.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = logoImg.width;
+                canvas.height = logoImg.height;
+                ctx.drawImage(logoImg, 0, 0);
+                const logoDataUrl = canvas.toDataURL();
+                
+                // Main Logo Header
+                doc.image(logoDataUrl, 50, 30, { width: 80 });
+                
+                // Hotel Info next to logo
+                doc.fontSize(9).fillColor('black').text('Where Comfort Meets Luxury', 140, 40);
+                doc.fontSize(8).text('Near Hanuman Mandir Deoria Road, Kuraghat, Gorakhpur - 273008', 140, 55);
+                doc.text('Phone: +91 6388491244 | Email: ashokahotelgkp@gmail.com', 140, 70);
+                
+                // Invoice Title & Number (positioned to avoid overlap)
+                doc.fontSize(16).fillColor('#644222').text('BOOKING INVOICE', 380, 30);
+                doc.fontSize(9).fillColor('black').text(`Invoice #: ${bookingData.id}`, 380, 50);
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, 380, 65);
+                doc.text(`Status: ${bookingData.status?.toUpperCase() || 'CONFIRMED'}`, 380, 80);
+                
+                // Line separator (moved down to give more space)
+                doc.moveTo(50, 100).lineTo(550, 100).stroke();
+                
+                // Bill To Section
+                let yPos = 120;
+                doc.fontSize(12).fillColor('#644222').text('BILL TO:', 50, yPos);
+                yPos += 20;
+                doc.fontSize(11).fillColor('black').text(`${bookingData.fullname}`, 50, yPos);
+                yPos += 15;
+                doc.text(`Mobile: ${bookingData.mobile}`, 50, yPos);
+                yPos += 15;
+                doc.text(`Booking Date: ${new Date(bookingData.created_at).toLocaleDateString()}`, 50, yPos);
+                
+                // Service Details Table Header
+                yPos += 40;
+                doc.rect(50, yPos, 500, 25).fillAndStroke('#f0f0f0', '#cccccc');
+                doc.fontSize(11).fillColor('black').text('DESCRIPTION', 60, yPos + 8);
+                doc.text('QTY', 350, yPos + 8);
+                doc.text('RATE', 420, yPos + 8);
+                doc.text('AMOUNT', 480, yPos + 8);
+                
+                // Service Details
+                yPos += 25;
+                doc.rect(50, yPos, 500, 40).stroke('#cccccc');
+                doc.fontSize(10).text(`Room Booking - ${bookingData.room}`, 60, yPos + 8);
+                doc.text(`Guest: ${bookingData.fullname}`, 60, yPos + 22);
+                doc.text(`Adults: ${bookingData.adult}`, 280, yPos + 8);
+                if (bookingData.occupancy) {
+                    doc.text(`Type: ${bookingData.occupancy}`, 280, yPos + 22);
+                }
+                doc.text('1', 360, yPos + 18);
+                
+                // Calculate amounts
+                const totalAmount = bookingData.total_amount || 0;
+                const baseAmount = Math.round(totalAmount / 1.18);
+                const gstAmount = totalAmount - baseAmount;
+                
+                doc.text(`Rs.${baseAmount}`, 420, yPos + 18);
+                doc.text(`Rs.${baseAmount}`, 480, yPos + 18);
+                
+                // Totals Section
+                yPos += 60;
+                doc.fontSize(10);
+                doc.text('Subtotal:', 400, yPos);
+                doc.text(`Rs.${baseAmount}`, 480, yPos);
+                yPos += 15;
+                doc.text('GST (18%):', 400, yPos);
+                doc.text(`Rs.${gstAmount}`, 480, yPos);
+                yPos += 20;
+                doc.moveTo(400, yPos).lineTo(550, yPos).stroke();
+                yPos += 20;
+                doc.fontSize(12).fillColor('#644222').text('TOTAL AMOUNT:', 400, yPos);
+                doc.text(`Rs.${totalAmount}`, 500, yPos);
+                
+                // Terms & Conditions
+                yPos += 40;
+                doc.moveTo(50, yPos).lineTo(550, yPos).stroke();
+                yPos += 15;
+                doc.fontSize(10).fillColor('#644222').text('TERMS & CONDITIONS:', 50, yPos);
+                yPos += 15;
+                doc.fontSize(9).fillColor('black').text('• Check-in: 12:00 PM | Check-out: 11:00 AM', 50, yPos);
+                yPos += 12;
+                doc.text('• Valid ID proof required at check-in', 50, yPos);
+                yPos += 12;
+                doc.text('• Cancellation policy as per hotel terms', 50, yPos);
+                
+                // Footer
+                yPos += 30;
+                doc.moveTo(50, yPos).lineTo(550, yPos).stroke();
+                yPos += 15;
+                doc.fontSize(11).fillColor('#644222').text('Thank you for choosing Ashoka Hotel!', 50, yPos);
+                yPos += 15;
+                doc.fontSize(8).fillColor('gray').text('This is a computer generated invoice. For queries, contact: +91 6388491244', 50, yPos);
+                
+                // Finalize PDF
+                doc.end();
+                
+                stream.on('finish', function() {
+                    const blob = stream.toBlob('application/pdf');
+                    const url = URL.createObjectURL(blob);
+                    
+                    if (viewOnly) {
+                        // Open in new tab for viewing
+                        window.open(url, '_blank');
+                    } else {
+                        // Download PDF
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `Ashoka_Hotel_Receipt_${bookingId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                });
+            };
+            
+            logoImg.onerror = function() {
+                // Fallback without logo
+                generatePDFWithoutLogo();
+            };
+            
+            logoImg.src = 'img/logo/logo.png';
+            
+            function generatePDFWithoutLogo() {
+                // Header without logo
+                doc.fontSize(20).text('ASHOKA HOTEL', 50, 50);
+                doc.fontSize(12).text('Booking Receipt', 50, 75);
+                doc.text('Near Hanuman Mandir Deoria Road, Kuraghat, Gorakhpur', 50, 90);
+                doc.text('Phone: +91 6388491244 | Email: ashokahotelgkp@gmail.com', 50, 105);
+                
+                // Continue with rest of PDF generation...
+                doc.moveTo(50, 130).lineTo(550, 130).stroke();
+                
+                let yPos = 150;
+                doc.fontSize(14).text('BOOKING CONFIRMATION', 50, yPos);
+                yPos += 30;
+                
+                doc.fontSize(12);
+                doc.text(`Booking ID: ${bookingData.id}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Guest Name: ${bookingData.fullname}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Mobile: ${bookingData.mobile}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Room Type: ${bookingData.room}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Adults: ${bookingData.adult}`, 50, yPos);
+                yPos += 20;
+                if (bookingData.occupancy) {
+                    doc.text(`Occupancy: ${bookingData.occupancy}`, 50, yPos);
+                    yPos += 20;
+                }
+                doc.text(`Total Amount: ₹${bookingData.total_amount}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Booking Date: ${new Date(bookingData.created_at).toLocaleDateString()}`, 50, yPos);
+                yPos += 20;
+                doc.text(`Status: ${bookingData.status?.toUpperCase() || 'CONFIRMED'}`, 50, yPos);
+                
+                yPos += 50;
+                doc.moveTo(50, yPos).lineTo(550, yPos).stroke();
+                yPos += 20;
+                doc.fontSize(10).text('Thank you for choosing Ashoka Hotel!', 50, yPos);
+                doc.text('This is a computer generated receipt.', 50, yPos + 15);
+                
+                doc.end();
+                
+                stream.on('finish', function() {
+                    const blob = stream.toBlob('application/pdf');
+                    const url = URL.createObjectURL(blob);
+                    
+                    if (viewOnly) {
+                        window.open(url, '_blank');
+                    } else {
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `Ashoka_Hotel_Receipt_${bookingId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                    
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                });
+            }
+        }
+        
+        function viewReceipt(bookingId) {
+            generateBookingReceipt(bookingId, true);
         }
 
         function showImage(imageSrc) {
